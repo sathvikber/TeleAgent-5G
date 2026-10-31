@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeleAgent — 5G Network Copilot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
+      <h1 class="text-lg font-semibold tracking-wide text-slate-100">TeleAgent UI</h1>
+      <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Qwen2.5-1.5B SLM</span>
+    </div>
+    <div id="status-indicator" class="text-xs text-slate-400">Connected</div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- Left Chat Area -->
+    <main class="flex-1 flex flex-col bg-slate-950">
+
+      <!-- Messages Feed -->
+      <div id="chat-feed" class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- System Welcome Message -->
+        <div class="flex flex-col max-w-3xl space-y-1">
+          <span class="text-xs text-slate-500 font-mono">TeleAgent Assistant</span>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-slate-300 text-sm leading-relaxed">
+            Ready to perform 5G network diagnostics. Try queries like:
+            <ul class="list-disc list-inside mt-2 text-slate-400 space-y-1 font-mono text-xs">
+              <li>"check the network connectivity on port 2152 at UPF at 192.168.10.7"</li>
+              <li>"Check network health of AMF at 10.0.0.2"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="p-4 border-t border-slate-800 bg-slate-900/30">
+        <form id="query-form" class="max-w-4xl mx-auto flex space-x-3">
+          <input
+            type="text"
+            id="query-input"
+            placeholder="Type network query (e.g. diagnose UPF at 10.0.0.5 port 2152)..."
+            class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition placeholder-slate-500"
+          />
+          <button
+            type="submit"
+            id="send-btn"
+            class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-5 py-3 rounded-lg text-sm transition flex items-center justify-center space-x-2"
+          >
+            <span>Analyze</span>
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <!-- Right Telemetry Sidebar -->
+    <aside class="w-80 border-l border-slate-800 bg-slate-900/40 p-5 flex flex-col space-y-6">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Execution Telemetry</h2>
+
+      <div class="space-y-4 text-xs font-mono">
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg">
+          <span class="text-slate-500 block mb-1">Intent Classified</span>
+          <span id="telemetry-intent" class="text-emerald-400 font-medium">--</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg">
+          <span class="text-slate-500 block mb-1">Executed Agents</span>
+          <ul id="telemetry-agents" class="text-slate-300 space-y-1">
+            <li class="text-slate-600">None</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Inference Time:</span>
+            <span id="telemetry-time" class="text-slate-200">0 ms</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Tokens Generated:</span>
+            <span id="telemetry-tokens" class="text-slate-200">0</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Model:</span>
+            <span id="telemetry-model" class="text-slate-400 text-[10px] truncate max-w-[120px]">--</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <script>
+    const ws = new WebSocket(`ws://${location.host}/ws/query`);
+    const chatFeed = document.getElementById('chat-feed');
+    const queryForm = document.getElementById('query-form');
+    const queryInput = document.getElementById('query-input');
+    const sendBtn = document.getElementById('send-btn');
+    const statusIndicator = document.getElementById('status-indicator');
+
+    ws.onopen = () => {
+      statusIndicator.textContent = "Online";
+      statusIndicator.className = "text-xs text-emerald-400";
+    };
+
+    ws.onclose = () => {
+      statusIndicator.textContent = "Offline";
+      statusIndicator.className = "text-xs text-rose-500";
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "status") {
+        updateLoadingState(data.message);
+      } else if (data.type === "result") {
+        removeLoadingState();
+        appendAgentResponse(data.content);
+        updateTelemetry(data);
+      }
+    };
+
+    queryForm.onsubmit = (e) => {
+      e.preventDefault();
+      const query = queryInput.value.trim();
+      if (!query) return;
+
+      appendUserQuery(query);
+      ws.send(JSON.stringify({ query: query }));
+      queryInput.value = '';
+      sendBtn.disabled = true;
+      sendBtn.classList.add('opacity-50');
+    };
+
+    function appendUserQuery(query) {
+      const div = document.createElement('div');
+      div.className = "flex flex-col items-end space-y-1 max-w-3xl ml-auto";
+      div.innerHTML = `
+        <span class="text-xs text-slate-500 font-mono">You</span>
+        <div class="bg-brand-600 text-white p-3.5 rounded-xl text-sm leading-relaxed">${escapeHtml(query)}</div>
+      `;
+      chatFeed.appendChild(div);
+      chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function appendAgentResponse(markdownContent) {
+      const div = document.createElement('div');
+      div.className = "flex flex-col max-w-3xl space-y-1";
+      div.innerHTML = `
+        <span class="text-xs text-slate-500 font-mono">TeleAgent</span>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-slate-200 text-sm leading-relaxed prose prose-invert max-w-none">
+          ${marked.parse(markdownContent)}
+        </div>
+      `;
+      chatFeed.appendChild(div);
+      chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function updateLoadingState(msg) {
+      let loader = document.getElementById('loading-indicator');
+      if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'loading-indicator';
+        loader.className = "flex items-center space-x-2 text-xs text-slate-500 font-mono pl-2";
+        loader.innerHTML = `
+          <div class="h-2 w-2 rounded-full bg-brand-500 animate-ping"></div>
+          <span id="loading-msg">${msg}</span>
+        `;
+        chatFeed.appendChild(loader);
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+      } else {
+        document.getElementById('loading-msg').textContent = msg;
+      }
+    }
+
+    function removeLoadingState() {
+      const loader = document.getElementById('loading-indicator');
+      if (loader) loader.remove();
+      sendBtn.disabled = false;
+      sendBtn.classList.remove('opacity-50');
+    }
+
+    function updateTelemetry(data) {
+      document.getElementById('telemetry-intent').textContent = data.intent || 'network';
+      document.getElementById('telemetry-time').textContent = `${(data.metadata.inference_time_ms / 1000).toFixed(2)} s`;
+      document.getElementById('telemetry-tokens').textContent = data.metadata.tokens || 0;
+      document.getElementById('telemetry-model').textContent = data.metadata.model || 'Qwen2.5-1.5B';
+
+      const agentsList = document.getElementById('telemetry-agents');
+      agentsList.innerHTML = '';
+      (data.metadata.agents || []).forEach(agent => {
+        const li = document.createElement('li');
+        li.className = "text-brand-400 font-medium";
+        li.textContent = `• ${agent}`;
+        agentsList.appendChild(li);
+      });
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>

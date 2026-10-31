@@ -1,0 +1,219 @@
+"""
+Log Agent
+
+Handles telecom log analysis requests.
+
+Supports:
+1. Simple log text
+2. Log files such as PDF, CSV, TXT, DOCX
+"""
+
+import os
+from typing import Any
+
+from teleagent.agents.base_agent import BaseAgent
+from teleagent.reasoning.reasoning_service import ReasoningService
+from teleagent.reasoning.schemas import ReasoningRequest
+
+from teleagent.log_agent.pipeline import LogPipeline
+
+
+class LogAgent(BaseAgent):
+    """
+    Agent responsible for telecom log analysis.
+
+    It supports:
+    - Direct/simple log text
+    - Uploaded log files
+    """
+
+    def __init__(
+        self,
+        reasoning_service: ReasoningService,
+    ):
+        self._reasoning_service = reasoning_service
+
+        # Existing log-processing pipeline
+        self._log_pipeline = LogPipeline(
+            output_dir="teleagent/log_agent/output"
+        )
+
+    def execute(
+        self,
+        request: Any,
+    ) -> Any:
+        """
+        Execute a log analysis request.
+
+        Simple text:
+            "AMF ERROR: UE registration failed"
+
+        File:
+            "/path/to/network_log.pdf"
+        """
+
+        # -------------------------------------------------
+        # CASE 1: Request is a file path
+        # -------------------------------------------------
+
+        if isinstance(request, str):
+
+            request = request.strip()
+
+            if os.path.isfile(request):
+
+                return self._analyze_file(request)
+
+        # -------------------------------------------------
+        # CASE 2: Simple log text
+        # -------------------------------------------------
+
+        return self._analyze_text(
+            str(request)
+        )
+
+    # =====================================================
+    # SIMPLE LOG ANALYSIS
+    # =====================================================
+
+    def _analyze_text(
+        self,
+        log_text: str,
+    ) -> Any:
+        """
+        Analyze a simple log directly.
+        """
+
+        reasoning_request = ReasoningRequest(
+            task="log",
+            query=log_text,
+        )
+
+        return self._reasoning_service.generate(
+            reasoning_request
+        )
+
+    # =====================================================
+    # FILE LOG ANALYSIS
+    # =====================================================
+
+    def _analyze_file(
+        self,
+        file_path: str,
+    ) -> Any:
+        """
+        Process a log file through the LogPipeline
+        and send the generated context to the
+        ReasoningService.
+        """
+
+        print("\n" + "=" * 60)
+        print("LOG AGENT: PROCESSING LOG FILE")
+        print("=" * 60)
+
+        print("File:", file_path)
+
+        # -------------------------------------------------
+        # Run existing LogPipeline
+        # -------------------------------------------------
+
+        result = self._log_pipeline.process_files(
+            [file_path]
+        )
+
+        # -------------------------------------------------
+        # Check processing errors
+        # -------------------------------------------------
+
+        if result.get("errors"):
+
+            print("\nLog processing errors:")
+
+            for error in result["errors"]:
+                print(" -", error)
+
+        # -------------------------------------------------
+        # Get generated SLM context
+        # -------------------------------------------------
+
+        context_path = result.get(
+            "context_path"
+        )
+
+        prompt_path = result.get(
+            "prompt_path"
+        )
+
+        # -------------------------------------------------
+        # Prefer generated context
+        # -------------------------------------------------
+
+        analysis_context = None
+
+        if context_path and os.path.exists(
+            context_path
+        ):
+
+            with open(
+                context_path,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                analysis_context = file.read()
+
+        # -------------------------------------------------
+        # Fallback to generated prompt
+        # -------------------------------------------------
+
+        if not analysis_context:
+
+            if prompt_path and os.path.exists(
+                prompt_path
+            ):
+
+                with open(
+                    prompt_path,
+                    "r",
+                    encoding="utf-8"
+                ) as file:
+
+                    analysis_context = file.read()
+
+        # -------------------------------------------------
+        # Nothing generated
+        # -------------------------------------------------
+
+        if not analysis_context:
+
+            return {
+                "status": "error",
+                "message": (
+                    "Log file was processed, but "
+                    "no analysis context was generated."
+                ),
+                "pipeline_result": result,
+            }
+
+        # -------------------------------------------------
+        # Send processed context to ReasoningService
+        # -------------------------------------------------
+
+        reasoning_request = ReasoningRequest(
+            task="log",
+            query=analysis_context,
+        )
+
+        response = self._reasoning_service.generate(
+            reasoning_request
+        )
+
+        # -------------------------------------------------
+        # Return analysis + pipeline information
+        # -------------------------------------------------
+
+        return {
+            "status": "success",
+            "response": response,
+            "pipeline_result": result,
+        }

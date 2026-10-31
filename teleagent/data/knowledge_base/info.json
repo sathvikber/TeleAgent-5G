@@ -1,0 +1,8 @@
+{
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "embedding_dimension": 384,
+    "documents": 18,
+    "chunks": 16061,
+    "vector_store": "FAISS",
+    "version": "1.0"
+}

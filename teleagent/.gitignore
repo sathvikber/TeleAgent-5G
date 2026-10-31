@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+env/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+
+# Generated model and training artifacts
+hf_cache/
+outputs/
+adapter_model.safetensors
+
+# Local databases and generated knowledge-base data
+data/database/
+data/knowledge_base_old/
+data/knowledge_base_before/
+
+# Editor and operating-system files
+.DS_Store
+.vscode/
+.idea/

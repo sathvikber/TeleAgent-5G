@@ -1,0 +1,117 @@
+# ==========================================================
+# Python
+# ==========================================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==========================================================
+# Virtual Environments
+# ==========================================================
+venv/
+.venv/
+env/
+
+# ==========================================================
+# Pytest
+# ==========================================================
+.pytest_cache/
+
+# ==========================================================
+# IDE
+# ==========================================================
+.vscode/
+.idea/
+
+# ==========================================================
+# OS Files
+# ==========================================================
+.DS_Store
+Thumbs.db
+
+# ==========================================================
+# Logs
+# ==========================================================
+logs/
+*.log
+
+# ==========================================================
+# Coverage
+# ==========================================================
+.coverage
+htmlcov/
+
+# ==========================================================
+# Build
+# ==========================================================
+build/
+dist/
+*.egg-info/
+
+# ==========================================================
+# Model Outputs
+# ==========================================================
+outputs/
+checkpoints/
+
+# ==========================================================
+# HuggingFace Cache (if created locally)
+# ==========================================================
+hf_cache/
+
+# ==========================================================
+# Environment Variables
+# ==========================================================
+.env
+.env.*
+
+# ==========================================================
+# Jupyter
+# ==========================================================
+.ipynb_checkpoints/
+
+# ==========================================================
+# Temporary Files
+# ==========================================================
+*.tmp
+*.bak
+# Nested Git repository: preserve its metadata locally, not in the new repo
+/teleagent/.git/
+
+# Local environment and secrets
+.env*
+!.env.example
+
+# Hugging Face model cache
+/slm-lora/hf_cache/
+
+# Trained adapters and model outputs
+/slm-lora/outputs/
+
+# Python caches and test artifacts
+**/__pycache__/
+.pytest_cache/
+
+# Local logs and generated files
+logs/
+*.log
+*.tmp
+*.bak
+
+# Generated knowledge-base artifacts
+/teleagent/data/knowledge_base/index.faiss
+/teleagent/data/knowledge_base/metadata.pkl
+
+# Generated log-agent outputs
+/teleagent/log_agent/output/
+/teleagent/teleagent/
+
+# Standalone checkpoint file; the primary model directory is at the repository root
+/teleagent/slm-lora
+
+# Temporary or backup files
+*.save
+/teleagent/coordinator/intent_analyzer1.py
+/teleagent/main1.py
+/teleagent/retrieval/intelligent_retrieval_service_broken_backup.py
+/teleagent/data/raw_documents/
