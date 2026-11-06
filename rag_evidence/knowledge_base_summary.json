@@ -1,0 +1,58 @@
+{
+  "evidence_type": "knowledge_base_inventory",
+  "metadata_file": {
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "embedding_dimension": 384,
+    "documents": 18,
+    "chunks": 16061,
+    "vector_store": "FAISS",
+    "version": "1.0"
+  },
+  "actual_index": {
+    "index_type": "IndexFlatIP",
+    "vector_count": 16061,
+    "embedding_dimension": 384
+  },
+  "actual_metadata": {
+    "chunk_records": 16061,
+    "chunk_id_mappings": 16061,
+    "unique_source_documents": 12,
+    "metadata_keys": [
+      "chunk_index",
+      "document_type",
+      "extension",
+      "network_functions",
+      "parent_section",
+      "path",
+      "procedures",
+      "protocols",
+      "release",
+      "section_number",
+      "section_title",
+      "source",
+      "specification_number",
+      "telecom_aware",
+      "version"
+    ]
+  },
+  "source_document_chunk_counts": {
+    "23502-k30.docx": 3651,
+    "23501.docx": 3260,
+    "unknown": 3206,
+    "29518-k10.docx": 1527,
+    "33501-k30.docx": 1216,
+    "24501-k10_3_Main-Body_s0505_s0506.docx": 999,
+    "24501-k10_5_Main-Body_s09_s10.docx": 830,
+    "245011.docx": 610,
+    "ts_129513v160600p.pdf": 426,
+    "29509-k00.docx": 306,
+    "5G_IoTSensor_UseCase_Signaltron_Day3.pdf": 16,
+    "5G_Camera_UseCase_Signaltron_Day3.pdf": 14
+  },
+  "validation": {
+    "vector_count_matches_metadata": true,
+    "vector_count_matches_chunk_records": true,
+    "dimension_matches_metadata": true,
+    "chunk_records_match_id_mappings": true
+  }
+}

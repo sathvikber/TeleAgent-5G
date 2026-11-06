@@ -1,0 +1,42 @@
+{
+  "evidence_type": "chunking_configuration",
+  "source_files": [
+    "teleagent/rag/chunker.py",
+    "teleagent/rag/telecom_chunker.py",
+    "teleagent/rag/knowledge_base_builder.py"
+  ],
+  "builder_configuration": {
+    "chunker_initialization": "DataChunker()",
+    "custom_overrides": false
+  },
+  "data_chunker": {
+    "default_chunk_size": 1000,
+    "default_chunk_overlap": 200,
+    "size_unit": "characters",
+    "telecom_aware_default": true
+  },
+  "generic_document_strategy": {
+    "method": "character_based_overlapping_chunks",
+    "chunk_size": 1000,
+    "overlap": 200
+  },
+  "telecom_document_strategy": {
+    "detection": [
+      "3GPP TS/TR specification number pattern",
+      "5G Core, 5G Network, or 5G System"
+    ],
+    "processing_pipeline": [
+      "TelecomIngestionProcessor",
+      "logical section extraction",
+      "TelecomSectionChunker"
+    ],
+    "chunk_size": 200,
+    "chunk_overlap": 40,
+    "size_unit": "words",
+    "derivation": {
+      "chunk_size": "1000 // 5",
+      "chunk_overlap": "200 // 5"
+    }
+  },
+  "important_note": "These values describe the current builder implementation. The existing knowledge-base artifacts were created earlier; their historical build configuration has not been independently verified from a build log."
+}
